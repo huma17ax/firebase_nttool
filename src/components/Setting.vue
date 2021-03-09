@@ -105,8 +105,8 @@ export default {
     console.log('destroy: setting')
     this.$store.commit('status/setUserName', {userName: this.name})
     this.$store.commit('status/setRoomName', {roomName: this.room})
-    this.socket.emit('join_room', this.roomName)
-    this.socket.emit('change_name', this.userName)
+    // this.socket.emit('join_room', this.roomName)
+    // this.socket.emit('change_name', this.userName)
   }
 }
 </script>
