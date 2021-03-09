@@ -77,18 +77,18 @@ export default {
       if (e.keyCode === 120) {
         e.preventDefault()
         let id = this.$store.state.status.texts.slice(-1)[0][1]
-        if (id !== 'default') this.socket.emit('undo', id)
+        // if (id !== 'default') this.socket.emit('undo', id)
       }
       if (e.keyCode === 122) {
         e.preventDefault()
         let id = this.$store.state.status.texts.slice(-1)[0][1]
-        if (id !== 'default') this.socket.emit('delete1', id)
+        // if (id !== 'default') this.socket.emit('delete1', id)
       }
       if (e.keyCode === 123) {
         e.preventDefault()
         console.log('-> send text')
         this.input = this.input.split('\n').join('|')
-        this.socket.emit('text', '|' + this.input)
+        // this.socket.emit('text', '|' + this.input)
         this.input = ''
       }
       if (e.keyCode === 13) {
@@ -106,7 +106,7 @@ export default {
           console.log(this.input)
           this.input = this.input.split('\n').join('|')
           console.log(this.input)
-          this.socket.emit('text', this.input)
+          // this.socket.emit('text', this.input)
           this.input = ''
         }
         synUpdate = true

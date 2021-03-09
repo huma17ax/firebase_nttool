@@ -1,6 +1,5 @@
-import io from 'socket.io-client'
+// import io from 'socket.io-client'
 import JsSHA from 'jssha'
-import ip from './ip'
 import router from '@/router/index.js'
 
 function genHash () {
@@ -12,8 +11,6 @@ function genHash () {
 }
 
 const state = {
-  socket: io(ip.address),
-  // socket: io('localhost:20080'),
   connectStatus: false,
   userName: 'default',
   roomName: 'default',
@@ -67,7 +64,7 @@ const actions = {
   synchronizeText ({commit, state}, payload) {
     if (payload.type === 'req') {
       let hash = genHash()
-      state.socket.emit('syn', {text: payload.content, hashforecho: hash, ping: state.echoTime})
+      // state.socket.emit('syn', {text: payload.content, hashforecho: hash, ping: state.echoTime})
       commit('addEchoQueue', [hash, new Date().getTime()])
     } else {
       commit('setEchoTime', {hash: payload.hash})
@@ -80,19 +77,19 @@ const actions = {
     if (payload.route.path !== '/chat' && payload.route.path !== '/setting' && payload.route.path !== '/manage') router.push('/chat')
     if (state.userName !== 'default' || state.roomName !== 'default') {
       console.log('old name')
-      state.socket.emit('join_room', state.roomName)
-      state.socket.emit('change_name', state.userName)
+      // state.socket.emit('join_room', state.roomName)
+      // state.socket.emit('change_name', state.userName)
     }
   },
   autoLogin ({commit, state}, payload) {
     if (payload && payload.route && payload.route.path === '/manage') return
     if (localStorage.pass) {
-      state.socket.emit('login', {id: localStorage.pass})
+      // state.socket.emit('login', {id: localStorage.pass})
       console.log('-> send AUTO login request')
     }
   },
   logout ({commit, state}, payload) {
-    state.socket.emit('logout')
+    // state.socket.emit('logout')
     commit('setUserID', {id: ''})
     commit('setAuthority', {authority: ''})
     commit('deleteLoginPass', {})
@@ -103,7 +100,7 @@ const actions = {
     if (state.subWindowID && !state.subWindowID.closed) return
     const _id = window.open('/#/manage', 'ManagementPage', 'width=700,height=400')
     commit('setSubWindow', {id: _id})
-    state.socket.emit('manage_request')
+    // state.socket.emit('manage_request')
   },
   sendManageID ({commit, state}, payload) {
     setTimeout(() => {
@@ -112,7 +109,7 @@ const actions = {
     }, 500)
   },
   manageAuthenticate ({commit, state}, payload) {
-    state.socket.emit('manage_auth', {parent: payload.parent, id: payload.id})
+    // state.socket.emit('manage_auth', {parent: payload.parent, id: payload.id})
   }
 }
 
@@ -121,7 +118,7 @@ const mutations = {
     state.methodType = payload
   },
   setSocketHandler (state, payload) {
-    state.socket.on(payload.event, payload.callback)
+    // state.socket.on(payload.event, payload.callback)
   },
   setConnectStatus (state, payload) {
     if (state.connectStatus !== payload.status) {
@@ -201,7 +198,7 @@ const mutations = {
     if (payload.type === 'req') {
       state.startTime = new Date().getTime()
       console.log('-> send echo')
-      state.socket.emit('echo', {ping: state.echoTime})
+      // state.socket.emit('echo', {ping: state.echoTime})
     } else if (payload.type === 'res') {
       state.echoTime = new Date().getTime() - state.startTime
     }

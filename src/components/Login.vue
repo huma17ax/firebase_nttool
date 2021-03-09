@@ -42,7 +42,7 @@ export default {
   methods: {
     login () {
       const id = (new Buffer.from((this.authority + ':' + this.password).toString(), 'binary')).toString('base64')
-      this.socket.emit('login', {id: id})
+      // this.socket.emit('login', {id: id})
       console.log('-> send login request')
     }
   },
