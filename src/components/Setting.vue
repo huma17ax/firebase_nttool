@@ -6,6 +6,7 @@
             <input class="input" v-model="name">
             <div style="padding-left: 10px; width: 50%;">Room:</div>
             <input class="input" v-model="room">
+            <div style="padding-left: 10px; width: 50%;">{{password}}</div>
         </div>
         <div class="echo" :class="{'_open': isOpen.echo}">
             <div style="position: relative; width: 100%; height: 100%;">
@@ -61,7 +62,7 @@ export default {
     }
   },
   computed: {
-    ...mapState('status', ['socket', 'userName', 'roomName', 'authority', 'echoTime', 'methodType', 'pageTransition'])
+    ...mapState('status', ['password', 'userName', 'roomName', 'authority', 'echoTime', 'methodType', 'pageTransition']),
   },
   watch: {
     method: function () {
@@ -86,7 +87,7 @@ export default {
       this.$store.dispatch('status/openManagePage', {})
     },
     logout: function () {
-      this.$store.dispatch('status/logout', {router: this.$router})
+      this.$store.dispatch('status/logout')
     }
   },
   mounted: function () {
@@ -103,10 +104,9 @@ export default {
   },
   beforeDestroy: function () {
     console.log('destroy: setting')
-    this.$store.commit('status/setUserName', {userName: this.name})
-    this.$store.commit('status/setRoomName', {roomName: this.room})
-    // this.socket.emit('join_room', this.roomName)
-    // this.socket.emit('change_name', this.userName)
+    this.$store.dispatch('status/setUserName', this.name).then(()=>{
+      this.$store.dispatch('status/joinRoom', this.room)
+    })
   }
 }
 </script>

@@ -21,17 +21,13 @@ import {mapGetters} from 'vuex'
 
 export default {
   name: 'monitor',
-  components: {
-
-  },
   data: function () {
     return {
-
     }
   },
   computed: {
-    ...mapGetters('status', ['roomMembers'])
-  }
+    ...mapGetters('status', ['roomMembers']),
+  },
 }
 </script>
 
