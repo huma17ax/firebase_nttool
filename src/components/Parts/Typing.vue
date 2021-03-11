@@ -38,7 +38,7 @@ export default {
       this.input = this.undoneText + this.input
       this.$store.commit('status/resetUndoneText')
       console.log('-> send syn')
-      this.$store.dispatch('status/synchronizeText', {type: 'req', content: this.input})
+      this.$store.dispatch('status/synchronizeText', this.input)
     },
     isfocusing: function () {
       if (this.methodType === '3') {
@@ -50,7 +50,7 @@ export default {
     onInput: function () {
       this.input = this.$refs.input.value
       console.log('-> send')
-      this.$store.dispatch('status/synchronizeText', {type: 'req', content: this.input})
+      this.$store.dispatch('status/synchronizeText', this.input)
     },
     onKeyDown: function (e) {
       if (this.isfocusing === false) return
@@ -77,18 +77,19 @@ export default {
       if (e.keyCode === 120) {
         e.preventDefault()
         let id = this.$store.state.status.texts.slice(-1)[0][1]
-        // if (id !== 'default') this.socket.emit('undo', id)
+        this.$store.dispatch('status/undoText')
       }
       if (e.keyCode === 122) {
         e.preventDefault()
         let id = this.$store.state.status.texts.slice(-1)[0][1]
-        // if (id !== 'default') this.socket.emit('delete1', id)
+        this.$store.dispatch('status/delete1')
       }
       if (e.keyCode === 123) {
         e.preventDefault()
         console.log('-> send text')
         this.input = this.input.split('\n').join('|')
         // this.socket.emit('text', '|' + this.input)
+        this.$store.dispatch('status/sendText', '\n' + this.input)
         this.input = ''
       }
       if (e.keyCode === 13) {
@@ -102,11 +103,9 @@ export default {
           }.bind(this), 10)
         } else {
           console.log('-> send text')
-          if (this.input === '') this.input = '|'
-          console.log(this.input)
-          this.input = this.input.split('\n').join('|')
-          console.log(this.input)
-          // this.socket.emit('text', this.input)
+          if (this.input === '') this.input = '\n'
+          // this.input = this.input.split('\n').join('|')
+          this.$store.dispatch('status/sendText', this.input)
           this.input = ''
         }
         synUpdate = true
@@ -114,7 +113,7 @@ export default {
 
       if (synUpdate) {
         console.log('-> send syn')
-        this.$store.dispatch('status/synchronizeText', {type: 'req', content: this.input})
+        this.$store.dispatch('status/synchronizeText', this.input)
       }
     },
     onKeyUp: function (e) {
@@ -127,6 +126,7 @@ export default {
   },
   beforeDestroy: function () {
     console.log('destory: typing')
+    this.$store.dispatch('status/synchronizeText', '')
     window.removeEventListener('keydown', this.onKeyDown)
     window.removeEventListener('keyup', this.onKeyUp)
   }

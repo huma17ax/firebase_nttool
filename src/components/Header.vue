@@ -1,13 +1,21 @@
 <template>
     <div class="content">
-        <div class="echo" v-bind:style="{'background-color': echoColorHex}">{{ echoTime }}ms</div>
+        <!-- <div class="echo" v-bind:style="{'background-color': echoColorHex}">{{ echoTime }}ms</div> -->
         <div v-for="(item, id) in notifyQueue" v-bind:key="id">
             <Notification class="notify">{{item}}</Notification>
         </div>
         <img class="logo" src="@/assets/logo.png">
-        <button class="btn-c" v-on:click="switchToChat()"><img class="img-c" src="@/assets/chat.png">　Chat</button>
+        <button class="btn-c" v-on:click="switchToChat()">
+            <img class="img-c" src="@/assets/chat.png">
+            <span style="margin-right: 20px;"></span>
+            Chat
+        </button>
 
-        <button class="btn-s" v-on:click="switchToSetting()"><img class="img-s" src="@/assets/setting.png">　Setting</button>
+        <button class="btn-s" v-on:click="switchToSetting()">
+            <img class="img-s" src="@/assets/setting.png">
+            <span style="margin-right: 20px;"></span>
+            Setting
+        </button>
         <div class="info">
             <!-- <img style="height: 20px; padding-top:5px;" src="@/assets/human.png"> -->
             <div class="status">{{userName}}さん</div>

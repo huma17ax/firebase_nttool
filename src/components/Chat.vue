@@ -1,5 +1,5 @@
 <template>
-    <div class="content">
+    <div class="content_wrapper">
         <div class="slider"
         v-on:mouseover="switchSliderVisible(true)"
         v-on:mouseleave="switchSliderVisible(false)">
@@ -88,7 +88,7 @@ export default {
 
 <style scoped>
 
-.content {
+.content_wrapper {
     z-index: 1;
     width: 100%;
     height: calc(100% - 40px);

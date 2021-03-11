@@ -8,6 +8,7 @@
 <script>
 import {mapState} from 'vuex'
 import toolHeader from '@/components/Header'
+import firebase from '@/firebase/init'
 
 export default {
   name: 'App',
@@ -15,7 +16,7 @@ export default {
     toolHeader
   },
   computed: {
-    ...mapState('status', ['userID', 'authority'])
+    ...mapState('status', ['userID'])
   },
   created () {
     console.log('created app')
@@ -137,28 +138,21 @@ export default {
           this.$store.commit('status/setManageData', {data: msg})
         }.bind(this)
       })
-
-    // router config
-    this.$router.beforeEach((to, from, next) => {
-      if (to.name === 'Manage' && window.name === 'ManagementPage') {
-        this.$store.commit('status/setPageTransition', {state: true})
-        setTimeout(() => { next() }, 800)
-      } else if (to.name === 'Login' && (this.userID && this.authority)) {
-        next({path: from.path})
-      } else if (to.name !== 'Login' && (!this.userID || !this.authority)) {
-        this.$store.commit('status/setPageTransition', {state: true})
-        setTimeout(() => { next({path: '/'}) }, 800)
-      } else {
-        this.$store.commit('status/setPageTransition', {state: true})
-        setTimeout(() => { next() }, 800)
-      }
+    window.addEventListener('beforeunload', this.onUnload)
+    firebase.database().ref('.info/connected').on('value', (snapshot) => {
+      this.$store.commit('status/setConnectStatus', snapshot.val())
     })
-    this.$router.afterEach((to, from, next) => {
-      this.$store.commit('status/setPageTransition', {state: false})
-    })
+  },
+  methods: {
+    onUnload() {
+      this.$store.dispatch('status/logout')
+    }
   },
   beforeDestroy () {
     console.log('destroy app')
+  },
+  destroyed () {
+    window.removeEventListener('beforeunload', this.onUnload)
   }
 }
 </script>

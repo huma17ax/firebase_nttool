@@ -77,10 +77,10 @@ export default {
       console.log('Scheduled contact')
       if (this.scheduleState) {
         console.log('-> send contact stop')
-        // this.socket.emit('contact', {type: 'stop'})
+        this.$store.dispatch('status/stopSchedule')
       } else {
         console.log('-> send contact start')
-        // this.socket.emit('contact', {type: 'start', minutes: this.time})
+        this.$store.dispatch('status/startSchedule', {seconds: this.time*60})
       }
     },
     onKeyDown: function (e) {
@@ -88,11 +88,11 @@ export default {
       if (e.keyCode === 13 && this.input !== '') {
         if (e.ctrlKey || e.shiftKey || e.altKey) {
           console.log('-> send roomchat global')
-          // this.socket.emit('roomchat', {text: this.input, type: 'global'})
+          this.$store.dispatch('status/sendGlobalChat', this.input)
           this.input = ''
         } else {
           console.log('-> send roomchat')
-          // this.socket.emit('roomchat', {text: this.input, type: 'room'})
+          this.$store.dispatch('status/sendRoomChat', this.input)
           this.input = ''
         }
       }
