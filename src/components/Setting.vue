@@ -6,12 +6,14 @@
             <input class="input" v-model="name">
             <div style="padding-left: 10px; width: 50%;">Room:</div>
             <input class="input" v-model="room">
-            <div style="padding-left: 10px; width: 50%;">{{password}}</div>
+            <div style="padding-left: 10px; margin-top: 10px; width: 100%;">Group: {{groupName}}</div>
+            <div style="padding-left: 10px; margin-top: 5px; width: 100%;">PassWord: {{password}}</div>
+            <button class="invite-btn" v-on:click="copyInvite()">招待文をコピー</button>
         </div>
         <div class="echo" :class="{'_open': isOpen.echo}">
             <div style="position: relative; width: 100%; height: 100%;">
-                <button class="echo-btn" v-on:click="echo()">Echo</button>
-                <div class="echo-txt">{{ echoTime }}ms</div>
+                <button class="echo-btn" v-on:click="echo()" disabled>Echo</button>
+                <!-- <div class="echo-txt">{{ echoTime }}ms</div> -->
             </div>
         </div>
         <div class="method-sel" :class="{'_open': isOpen.method}">
@@ -21,7 +23,7 @@
                 <input class="method-item" type="radio" name="method" value="3" v-model="method">Type3
             </div>
         </div>
-        <div class="manage" v-if="authority=='manager'" :class="{'_open': isOpen.manage}">
+        <!-- <div class="manage" v-if="authority=='manager'" :class="{'_open': isOpen.manage}">
             <button class="manage-btn" @click="openSubWindow()">管理ページ</button>
         </div>
         <div class="update" v-if="authority=='notetaker' || authority=='manager'" :class="{'_open': isOpen.update}">
@@ -31,7 +33,7 @@
                 </div>
                 <p style="height: 20px;"></p>
             </div>
-        </div>
+        </div> -->
         <div class="logout" :class="{'_open': isOpen.logout}">
             <button class="logout-btn" @click="logout()">ログアウト</button>
         </div>
@@ -62,7 +64,7 @@ export default {
     }
   },
   computed: {
-    ...mapState('status', ['password', 'userName', 'roomName', 'authority', 'echoTime', 'methodType', 'pageTransition']),
+    ...mapState('status', ['password', 'userName', 'roomName', 'groupName', 'echoTime', 'methodType', 'pageTransition']),
   },
   watch: {
     method: function () {
@@ -80,6 +82,18 @@ export default {
     }
   },
   methods: {
+    copyInvite: function () {
+      const copyText = 'https://' + window.location.host + '\n\nグループ名：' + this.groupName + '\nパスワード：' + this.password
+      const handler = function handler(event) {
+        event.preventDefault()
+        event.clipboardData.setData('text/plain', copyText)
+        document.removeEventListener('copy', handler)
+      }
+      document.addEventListener('copy', handler)
+      if (!document.execCommand('copy')) {
+        document.removeEventListener('copy', handler)
+      }
+    },
     echo: function () {
       this.$store.commit('status/echoServer', {type: 'req'})
     },
@@ -125,7 +139,7 @@ export default {
 .info {
     opacity: 0;
     width: 25%;
-    height: 200px;
+    height: 220px;
     margin-left: 10px;
     box-shadow: 8px 8px 8px 0px rgb(170, 205, 205);
     border-radius: 10px;
@@ -151,6 +165,28 @@ export default {
 .input:focus {
   background-color: rgb(220, 235, 235);
   transition: 0.25s;
+}
+
+.invite-btn {
+  width: 50%;
+  height: 25px;
+  margin: 5px 0px 0px 10px;
+  border: none;
+  outline: none;
+  padding: 0px;
+  border-radius: 10px;
+  background-color: rgb(235, 250, 250);
+}
+
+.invite-btn:hover {
+  background-color: rgb(220, 235, 235);
+  transition: 0.25s;
+}
+
+.invite-btn:active {
+  background-color: rgb(215, 230, 230);
+  box-shadow: inset 2px 2px 2px 0px rgb(170, 205, 205);
+  transition: 0s;
 }
 
 .echo {
@@ -290,7 +326,7 @@ export default {
 .update {
     opacity: 0;
     width: 70%;
-    height: calc(90% - 225px);
+    height: calc(90% - 245px);
     margin-left: 10px;
     margin-top: 15px;
     box-shadow: 8px 8px 8px 0px rgb(170, 205, 205);
