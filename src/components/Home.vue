@@ -91,8 +91,15 @@ export default {
   },
   mounted: function () {
     console.log('mounted: login')
-    this.$store.dispatch('status/autoLogin')
-    setTimeout(() => { this.isOpen = true }, 50)
+    // this.$store.dispatch('status/autoLogin')
+    if (this.$route.query.group && this.$route.query.pw) {
+      this.groupName = this.$route.query.group
+      setTimeout(() => {
+        this.password = this.$route.query.pw
+        this.isTryToJoin = true
+      }, 20)
+    }
+    setTimeout(() => { this.isOpen = true }, 30)
   },
   beforeDestroy: function () {
     console.log('destory: login')
