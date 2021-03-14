@@ -83,7 +83,8 @@ export default {
   },
   methods: {
     copyInvite: function () {
-      const copyText = 'https://' + window.location.host + '\n\nグループ名：' + this.groupName + '\nパスワード：' + this.password
+      const url = 'https://' + window.location.host + '/#/?group=' + this.groupName + '&pw=' + this.password
+      const copyText = url + '\n\nグループ名：' + this.groupName + '\nパスワード：' + this.password
       const handler = function handler(event) {
         event.preventDefault()
         event.clipboardData.setData('text/plain', copyText)
