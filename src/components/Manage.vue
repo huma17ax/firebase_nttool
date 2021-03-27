@@ -35,21 +35,6 @@ export default {
       windowName: window.name,
       parent_id: undefined,
       manage_id: undefined,
-      sample: [{
-        id: 'askdfhasdfasdf',
-        name: 'default',
-        room: 'default',
-        authority: 'notetaker',
-        text: 'こんにちは',
-        ping: 100
-      }, {
-        id: 'oikuergfnsdfhgusdf',
-        name: 'sekya',
-        room: 'A',
-        authority: 'manager',
-        text: 'aaaa',
-        ping: 10
-      }],
       sortRule: 'none',
       sortOrder: 0
     }

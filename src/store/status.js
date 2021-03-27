@@ -30,8 +30,6 @@ const state = {
   userName: '',
   roomName: '',
   userID: '',
-  authority: '',
-  roomStatus: {},
   roommates: [],
   // --- input ---
   texts: [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']],
@@ -129,26 +127,7 @@ const actions = {
     const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/global_chat').push({'message': payload})
   },
-  loginSuccess ({commit, state}, payload) {
-    commit('setUserID', {id: payload.id})
-    commit('setAuthority', {authority: payload.authority})
-    console.log(payload.route.path)
-    if (payload.route.path !== '/chat' && payload.route.path !== '/setting' && payload.route.path !== '/manage') router.push('/chat')
-    if (state.userName !== 'default' || state.roomName !== 'default') {
-      console.log('old name')
-      // state.socket.emit('join_room', state.roomName)
-      // state.socket.emit('change_name', state.userName)
-    }
-  },
-  autoLogin ({commit, state}, payload) {
-    if (payload && payload.route && payload.route.path === '/manage') return
-    if (localStorage.pass) {
-      // state.socket.emit('login', {id: localStorage.pass})
-      console.log('-> send AUTO login request')
-    }
-  },
   logout ({commit, state}, payload) {
-    // state.socket.emit('logout')
     const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).remove()
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
@@ -156,8 +135,6 @@ const actions = {
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
-    // commit('setAuthority', {authority: ''})
-    // commit('deleteLoginPass', {})
     commit('setSchedule', {type: 'stop'})
     commit('initializeStatus')
     router.push('/').catch(err => { console.log(err) })
@@ -319,7 +296,6 @@ const actions = {
     if (state.subWindowID && !state.subWindowID.closed) return
     const _id = window.open('/#/manage', 'ManagementPage', 'width=700,height=400')
     commit('setSubWindow', {id: _id})
-    // state.socket.emit('manage_request')
   },
   sendManageID ({commit, state}, payload) {
     setTimeout(() => {
@@ -328,7 +304,6 @@ const actions = {
     }, 500)
   },
   manageAuthenticate ({commit, state}, payload) {
-    // state.socket.emit('manage_auth', {parent: payload.parent, id: payload.id})
   }
 }
 
@@ -357,9 +332,6 @@ const mutations = {
   changeMethodType (state, payload) {
     state.methodType = payload
   },
-  setSocketHandler (state, payload) {
-    // state.socket.on(payload.event, payload.callback)
-  },
   setConnectStatus (state, payload) {
     if (state.connectStatus !== payload) {
       state.connectStatus = payload
@@ -370,9 +342,6 @@ const mutations = {
   },
   setRoomName (state, payload) {
     state.roomName = payload
-  },
-  setAuthority (state, payload) {
-    state.authority = payload.authority
   },
   initText (state, payload) {
     state.texts = [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']]
@@ -394,12 +363,6 @@ const mutations = {
   setUserID (state, payload) {
     state.userID = payload
   },
-  setLoginPass (state, payload) {
-    localStorage.pass = payload.pass
-  },
-  deleteLoginPass (state, payload) {
-    localStorage.removeItem('pass')
-  },
   initRoommate (state, payload) {
     state.roommates = []
   },
@@ -419,23 +382,6 @@ const mutations = {
   removeRoommate (state, payload) {
     if (payload.id == state.userID) return
     state.roommates = state.roommates.filter((item) => {return item.id != payload.id})
-  },
-  setRoomStatus (state, payload) {
-    let newStatus = {}
-    for (var user of payload.status) {
-      if (user.id === state.userID) continue
-      if (user.id in state.roomStatus) {
-        newStatus[user.id] = {name: user.name, input: state.roomStatus[user.id].input}
-      } else {
-        newStatus[user.id] = {name: user.name, input: ''}
-      }
-    }
-    state.roomStatus = newStatus
-  },
-  setMemberText (state, payload) {
-    if (payload.id in state.roomStatus) {
-      state.roomStatus[payload.id].input = payload.text
-    }
   },
   setNewChat (state, payload) {
     state.newChat = payload
