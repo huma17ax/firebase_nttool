@@ -88,7 +88,6 @@ export default {
         e.preventDefault()
         console.log('-> send text')
         this.input = this.input.split('\n').join('|')
-        // this.socket.emit('text', '|' + this.input)
         this.$store.dispatch('status/sendText', '\n' + this.input)
         this.input = ''
       }
@@ -104,7 +103,6 @@ export default {
         } else {
           console.log('-> send text')
           if (this.input === '') this.input = '\n'
-          // this.input = this.input.split('\n').join('|')
           this.$store.dispatch('status/sendText', this.input)
           this.input = ''
         }

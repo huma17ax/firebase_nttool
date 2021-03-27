@@ -82,7 +82,6 @@ export default {
       if (!this.connectStatus) return
       if (this.isTryToJoin) {
         //[FIREBASE] join_group
-        // this.$router.push('/chat')
         this.$store.dispatch('status/joinGroup', {groupName: this.groupName, password: this.password})
       } else {
         this.isTryToJoin = true
@@ -91,7 +90,6 @@ export default {
   },
   mounted: function () {
     console.log('mounted: login')
-    // this.$store.dispatch('status/autoLogin')
     if (this.$route.query.group && this.$route.query.pw) {
       this.groupName = this.$route.query.group
       setTimeout(() => {
