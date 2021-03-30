@@ -16,7 +16,6 @@ export default {
     toolHeader
   },
   computed: {
-    ...mapState('status', ['userID'])
   },
   created () {
     console.log('created app')
@@ -24,6 +23,16 @@ export default {
     firebase.database().ref('.info/connected').on('value', (snapshot) => {
       this.$store.commit('status/setConnectStatus', snapshot.val())
     })
+    firebase.auth().onAuthStateChanged((user) => {
+      if (user) this.$store.commit('status/setAuthID', user.uid)
+    })
+    firebase.auth().signInAnonymously()
+      .then(() => {
+        console.log('You sign in as anonymous.')
+      })
+      .catch(() => {
+        console.error('You cannot sign in as anonymous.')
+      })
   },
   methods: {
     onUnload() {

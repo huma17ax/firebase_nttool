@@ -30,6 +30,7 @@ const state = {
   userName: '',
   roomName: '',
   userID: '',
+  authID: '',
   roommates: [],
   // --- input ---
   texts: [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']],
@@ -81,17 +82,17 @@ const getters = {
 const actions = {
   synchronizeText ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).update({'input': payload})
   },
   sendText ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').push({'message': payload})
   },
   undoText ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
@@ -103,7 +104,7 @@ const actions = {
   },
   delete1 ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
@@ -119,16 +120,16 @@ const actions = {
   },
   sendRoomChat ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').push({'message': payload})
   },
   sendGlobalChat ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/global_chat').push({'message': payload})
   },
   logout ({commit, state}, payload) {
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).remove()
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
@@ -145,7 +146,8 @@ const actions = {
     //パスワードのブラウザ保存
     //セットユーザーID
     const PW = genPW()
-    const GROUP = 'group_' + payload.groupName + '_' + genHash(PW)
+    const GROUP = 'groups/' + payload.groupName + '_' + genHash(PW)
+    firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(PW)]: true})
     firebase.database().ref(GROUP).update({'name': payload.groupName}, (error) => {
       if (error) {
         commit('setLoginFailed', 'グループを作成できませんでした')
@@ -157,7 +159,8 @@ const actions = {
   joinGroup ({commit, state, dispatch}, payload) {
     commit('setLoginFailed', '')
     if (!state.connectStatus) return
-    const GROUP = 'group_' + payload.groupName + '_' + genHash(payload.password)
+    const GROUP = 'groups/' + payload.groupName + '_' + genHash(payload.password)
+    firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(payload.password)]: true})
     firebase.database().ref(GROUP).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
@@ -190,7 +193,7 @@ const actions = {
   setUserName ({commit, state}, payload) {
     if (state.userName == payload) return
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).update({'name': payload}, (error) => {
       if (!error) {
         commit('setUserName', payload)
@@ -200,7 +203,7 @@ const actions = {
   joinRoom ({commit, state}, payload) {
     if (state.roomName == payload) return
     if (!state.groupName || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user').off()
@@ -277,7 +280,7 @@ const actions = {
   },
   startSchedule ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
       'time': payload.seconds,
       'start': firebase.database.ServerValue.TIMESTAMP
@@ -285,7 +288,7 @@ const actions = {
   },
   stopSchedule ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
-    const GROUP = 'group_' + state.groupName + '_' + genHash(state.password)
+    const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
       'time': 0,
       'start': 0
@@ -362,6 +365,9 @@ const mutations = {
   },
   setUserID (state, payload) {
     state.userID = payload
+  },
+  setAuthID (state, payload) {
+    state.authID = payload
   },
   initRoommate (state, payload) {
     state.roommates = []
