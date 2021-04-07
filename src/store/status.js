@@ -83,7 +83,7 @@ const actions = {
   synchronizeText ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).update({'input': payload})
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).update({'input': payload})
   },
   sendText ({commit, state}, payload) {
     if (!state.groupName || !state.userID || !state.connectStatus) return
@@ -130,11 +130,11 @@ const actions = {
   },
   logout ({commit, state}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).remove()
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).remove()
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user').off()
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
     firebase.database().ref('authentications/'+state.authID).set(null)
     commit('setSchedule', {type: 'stop'})
@@ -195,7 +195,7 @@ const actions = {
     if (state.userName == payload) return
     if (!state.groupName || !state.userID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).update({'name': payload}, (error) => {
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).update({'name': payload}, (error) => {
       if (!error) {
         commit('setUserName', payload)
       }
@@ -207,24 +207,24 @@ const actions = {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user').off()
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
     commit('initText')
     commit('initChatText')
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
     let userData = null
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).once('value')
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
         userData = snapshot.val()
       } else {
         userData = {'name': state.userName, 'input': ''}
       }
-      return firebase.database().ref(GROUP+'/room_'+state.roomName+'/user/'+state.userID).remove()
+      return firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).remove()
     })
     .then(() => {
-      const userID = firebase.database().ref(GROUP+'/room_'+payload+'/user').push(userData, (error) => {
+      const userID = firebase.database().ref(GROUP+'/room_'+payload+'/members').push(userData, (error) => {
         if (!error) {
           firebase.database().ref(GROUP+'/room_'+payload+'/text').on('child_added', (snapshot) => {
             commit('addText', {text: snapshot.val().message, id:snapshot.key})
@@ -250,13 +250,13 @@ const actions = {
               }
             })
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/user').on('child_added', (snapshot) => {
+          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_added', (snapshot) => {
             commit('addRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/user').on('child_changed', (snapshot) => {
+          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_changed', (snapshot) => {
             commit('updateRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/user').on('child_removed', (snapshot) => {
+          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_removed', (snapshot) => {
             commit('removeRoommate', {id: snapshot.key})
           })
           firebase.database().ref(GROUP+'/room_'+payload+'/schedule').on('value', (snapshot) => {
