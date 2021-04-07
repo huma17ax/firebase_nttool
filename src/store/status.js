@@ -29,7 +29,6 @@ const state = {
   password: '',
   userName: '',
   roomName: '',
-  userID: '',
   authID: '',
   roommates: [],
   // --- input ---
@@ -81,17 +80,17 @@ const getters = {
 
 const actions = {
   synchronizeText ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).update({'input': payload})
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).update({'input': payload})
   },
   sendText ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').push({'message': payload})
   },
   undoText ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
@@ -103,7 +102,7 @@ const actions = {
     })
   },
   delete1 ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
@@ -119,18 +118,18 @@ const actions = {
     })
   },
   sendRoomChat ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').push({'message': payload})
   },
   sendGlobalChat ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/global_chat').push({'message': payload})
   },
   logout ({commit, state}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).remove()
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).remove()
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
@@ -191,15 +190,21 @@ const actions = {
       }
     })
   },
+  leaveGroup ({commit, state, dispatch}, payload) {
+
+  },
   setUserName ({commit, state}, payload) {
     if (state.userName == payload) return
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).update({'name': payload}, (error) => {
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).update({'name': payload}, (error) => {
       if (!error) {
         commit('setUserName', payload)
       }
     })
+  },
+  changeRoom ({commit, state, dispatch}, payload) {
+
   },
   joinRoom ({commit, state}, payload) {
     if (state.roomName == payload) return
@@ -214,17 +219,17 @@ const actions = {
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
     let userData = null
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).once('value')
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
         userData = snapshot.val()
       } else {
         userData = {'name': state.userName, 'input': ''}
       }
-      return firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.userID).remove()
+      return firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).remove()
     })
     .then(() => {
-      const userID = firebase.database().ref(GROUP+'/room_'+payload+'/members').push(userData, (error) => {
+      firebase.database().ref(GROUP+'/room_'+payload+'/members/'+state.authID).update(userData, (error) => {
         if (!error) {
           firebase.database().ref(GROUP+'/room_'+payload+'/text').on('child_added', (snapshot) => {
             commit('addText', {text: snapshot.val().message, id:snapshot.key})
@@ -274,13 +279,15 @@ const actions = {
             }
           })
           commit('setRoomName', payload)
-          commit('setUserID', userID)
         }
       }).key
     })
   },
+  leaveRoom ({commit, state}, payload) {
+
+  },
   startSchedule ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
       'time': payload.seconds,
@@ -288,7 +295,7 @@ const actions = {
     })
   },
   stopSchedule ({commit, state}, payload) {
-    if (!state.groupName || !state.userID || !state.connectStatus) return
+    if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
       'time': 0,
@@ -304,7 +311,7 @@ const actions = {
   sendManageID ({commit, state}, payload) {
     setTimeout(() => {
       state.subWindowID.postMessage('MANAGE::' + payload.id, location.origin)
-      state.subWindowID.postMessage('PARENT::' + state.userID, location.origin)
+      state.subWindowID.postMessage('PARENT::' + state.authID, location.origin)
     }, 500)
   },
   manageAuthenticate ({commit, state}, payload) {
@@ -317,7 +324,6 @@ const mutations = {
     state.password = ''
     state.userName = ''
     state.roomName = ''
-    state.userID = ''
     state.roommates = []
     state.texts = [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']]
     state.chatTexts = []
@@ -364,9 +370,6 @@ const mutations = {
   removeText (state, payload) {
     state.texts = state.texts.filter((item) => {return item[1] != payload.id})
   },
-  setUserID (state, payload) {
-    state.userID = payload
-  },
   setAuthID (state, payload) {
     state.authID = payload
   },
@@ -374,11 +377,11 @@ const mutations = {
     state.roommates = []
   },
   addRoommate (state, payload) {
-    if (payload.id == state.userID) return
+    if (payload.id == state.authID) return
     state.roommates.push(payload)
   },
   updateRoommate (state, payload) {
-    if (payload.id == state.userID) return
+    if (payload.id == state.authID) return
     let newRoommates = state.roommates
     let idx = newRoommates.findIndex((item) => item.id == payload.id)
     if (idx==-1) return
@@ -387,7 +390,7 @@ const mutations = {
     state.roommates = newRoommates
   },
   removeRoommate (state, payload) {
-    if (payload.id == state.userID) return
+    if (payload.id == state.authID) return
     state.roommates = state.roommates.filter((item) => {return item.id != payload.id})
   },
   setNewChat (state, payload) {
