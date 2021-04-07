@@ -136,6 +136,7 @@ const actions = {
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/user').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
+    firebase.database().ref('authentications/'+state.authID).set(null)
     commit('setSchedule', {type: 'stop'})
     commit('initializeStatus')
     router.push('/').catch(err => { console.log(err) })
