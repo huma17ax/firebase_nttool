@@ -87,7 +87,7 @@ const actions = {
   sendText ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').push({'message': payload})
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP})
   },
   undoText ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
@@ -112,7 +112,10 @@ const actions = {
         if (message.length==1) {
           firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).remove()
         } else {
-          firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).update({message: message.substring(0, message.length-1)})
+          firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).update({
+            message: message.substring(0, message.length-1),
+            timestamp: firebase.database.ServerValue.TIMESTAMP
+          })
         }
       }
     })
@@ -120,12 +123,12 @@ const actions = {
   sendRoomChat ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').push({'message': payload})
+    firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP, 'sender': state.authID})
   },
   sendGlobalChat ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/global_chat').push({'message': payload})
+    firebase.database().ref(GROUP+'/global_chat').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP, 'sender': state.authID})
   },
   logout ({commit, state}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
