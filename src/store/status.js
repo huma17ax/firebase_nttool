@@ -129,11 +129,15 @@ const actions = {
   },
   logout ({commit, state}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).remove()
+    let member_updates = {}
+    member_updates['/room_'+state.roomName+'/members/'+state.authID] = null
+    member_updates['/members/'+state.authID] = null
+    firebase.database().ref(GROUP).update(member_updates)
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/members').off()
+    firebase.database().ref(GROUP+'/members').off()
     firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
     firebase.database().ref('authentications/'+state.authID).set(null)
     commit('setSchedule', {type: 'stop'})
@@ -202,6 +206,7 @@ const actions = {
         commit('setUserName', payload)
       }
     })
+    firebase.database().ref(GROUP+'/members/'+state.authID).update({'name': payload})
   },
   changeRoom ({commit, state, dispatch}, payload) {
 
@@ -226,6 +231,7 @@ const actions = {
       } else {
         userData = {'name': state.userName, 'input': ''}
       }
+      firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+state.roomName).remove()
       return firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).remove()
     })
     .then(() => {
@@ -279,6 +285,7 @@ const actions = {
             }
           })
           commit('setRoomName', payload)
+          firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+payload).set(true)
         }
       }).key
     })
