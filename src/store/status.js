@@ -82,21 +82,21 @@ const actions = {
   synchronizeText ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).update({'input': payload})
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).update({'input': payload})
   },
   sendText ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP})
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP})
   },
   undoText ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
         const key = Object.keys(snapshot.val())[0]
-        firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).remove()
+        firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').child(key).remove()
         commit('setUndoneText', snapshot.val()[key].message)
       }
     })
@@ -104,15 +104,15 @@ const actions = {
   delete1 ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').limitToLast(1).once('value')
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').limitToLast(1).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
         const key = Object.keys(snapshot.val())[0]
         const message = snapshot.val()[key].message
         if (message.length==1) {
-          firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).remove()
+          firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').child(key).remove()
         } else {
-          firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').child(key).update({
+          firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').child(key).update({
             message: message.substring(0, message.length-1),
             timestamp: firebase.database.ServerValue.TIMESTAMP
           })
@@ -123,7 +123,7 @@ const actions = {
   sendRoomChat ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP, 'sender': state.authID})
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/chat').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP, 'sender': state.authID})
   },
   sendGlobalChat ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
@@ -133,15 +133,15 @@ const actions = {
   logout ({commit, state}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     let member_updates = {}
-    member_updates['/room_'+state.roomName+'/members/'+state.authID] = null
+    member_updates['/rooms/'+state.roomName+'/members/'+state.authID] = null
     member_updates['/members/'+state.authID] = null
     firebase.database().ref(GROUP).update(member_updates)
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/chat').limitToLast(1).off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members').off()
     firebase.database().ref(GROUP+'/members').off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/schedule').off()
     firebase.database().ref('authentications/'+state.authID).set(null)
     commit('setSchedule', {type: 'stop'})
     commit('initializeStatus')
@@ -204,7 +204,7 @@ const actions = {
     if (state.userName == payload) return
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).update({'name': payload}, (error) => {
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).update({'name': payload}, (error) => {
       if (!error) {
         commit('setUserName', payload)
       }
@@ -218,16 +218,16 @@ const actions = {
     if (state.roomName == payload) return
     if (!state.groupName || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/text').off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members').off()
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/chat').limitToLast(1).off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members').off()
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/schedule').off()
     commit('initText')
     commit('initChatText')
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
     let userData = null
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).once('value')
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
     .then((snapshot) => {
       if (snapshot.exists()) {
         userData = snapshot.val()
@@ -235,28 +235,28 @@ const actions = {
         userData = {'name': state.userName, 'input': ''}
       }
       firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+state.roomName).remove()
-      return firebase.database().ref(GROUP+'/room_'+state.roomName+'/members/'+state.authID).remove()
+      return firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).remove()
     })
     .then(() => {
-      firebase.database().ref(GROUP+'/room_'+payload+'/members/'+state.authID).update(userData, (error) => {
+      firebase.database().ref(GROUP+'/rooms/'+payload+'/members/'+state.authID).update(userData, (error) => {
         if (!error) {
-          firebase.database().ref(GROUP+'/room_'+payload+'/text').on('child_added', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/text').on('child_added', (snapshot) => {
             commit('addText', {text: snapshot.val().message, id:snapshot.key})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/text').on('child_changed', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/text').on('child_changed', (snapshot) => {
             commit('updateText', {text: snapshot.val().message, id:snapshot.key})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/text').on('child_removed', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/text').on('child_removed', (snapshot) => {
             commit('removeText', {text: snapshot.val().message, id:snapshot.key})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/chat').once('value')
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/chat').once('value')
           .then((snapshot) => {
             if (snapshot.exists()) {
               commit('setNewChat', false)
             } else {
               commit('setNewChat', true)
             }
-            firebase.database().ref(GROUP+'/room_'+payload+'/chat').limitToLast(1).on('child_added', (snapshot) => {
+            firebase.database().ref(GROUP+'/rooms/'+payload+'/chat').limitToLast(1).on('child_added', (snapshot) => {
               if (state.newChat) {
                 commit('addChatText', snapshot.val().message)
               } else {
@@ -264,16 +264,16 @@ const actions = {
               }
             })
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_added', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/members').on('child_added', (snapshot) => {
             commit('addRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_changed', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/members').on('child_changed', (snapshot) => {
             commit('updateRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/members').on('child_removed', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/members').on('child_removed', (snapshot) => {
             commit('removeRoommate', {id: snapshot.key})
           })
-          firebase.database().ref(GROUP+'/room_'+payload+'/schedule').on('value', (snapshot) => {
+          firebase.database().ref(GROUP+'/rooms/'+payload+'/schedule').on('value', (snapshot) => {
             if (snapshot.exists()) {
               const schedule = snapshot.val()
               if (schedule.start == 0) {
@@ -299,7 +299,7 @@ const actions = {
   startSchedule ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/schedule').set({
       'time': payload.seconds,
       'start': firebase.database.ServerValue.TIMESTAMP
     })
@@ -307,7 +307,7 @@ const actions = {
   stopSchedule ({commit, state}, payload) {
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/room_'+state.roomName+'/schedule').set({
+    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/schedule').set({
       'time': 0,
       'start': 0
     })
