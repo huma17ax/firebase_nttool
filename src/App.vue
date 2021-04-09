@@ -36,7 +36,7 @@ export default {
   },
   methods: {
     onUnload() {
-      this.$store.dispatch('status/logout')
+      this.$store.dispatch('status/leaveGroup')
     }
   },
   beforeDestroy () {

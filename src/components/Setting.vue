@@ -102,7 +102,7 @@ export default {
       this.$store.dispatch('status/openManagePage', {})
     },
     logout: function () {
-      this.$store.dispatch('status/logout')
+      this.$store.dispatch('status/leaveGroup')
     }
   },
   mounted: function () {
@@ -120,7 +120,7 @@ export default {
   beforeDestroy: function () {
     console.log('destroy: setting')
     this.$store.dispatch('status/setUserName', this.name).then(()=>{
-      this.$store.dispatch('status/joinRoom', this.room)
+      this.$store.dispatch('status/changeRoom', {room: this.room})
     })
   }
 }
