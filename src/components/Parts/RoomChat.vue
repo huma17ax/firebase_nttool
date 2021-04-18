@@ -25,8 +25,13 @@
             v-on:blur='isfocusing = false'>
         </div>
 
-        <div style="padding: 10px 10px 0px 10px; height: 20px; text-align: right;">
-            Alt+Enter: 全体送信
+        <div>
+            <div style="padding: 10px 10px 0px 10px; height: 20px; display: inline-block;">
+                {{globalSend ? 'グループ全体に送信' : 'ルームのみに送信'}}
+            </div>
+            <div style="padding: 10px 10px 0px 10px; height: 20px; display: inline-block; position: absolute; right: 3px;">
+                {{globalSend ? '' : '[Shift]：全体'}}
+            </div>
         </div>
     </div>
 </template>
@@ -41,7 +46,8 @@ export default {
       input: '',
       time: 15,
       colorTimer: 0,
-      isfocusing: false
+      isfocusing: false,
+      globalSend: false,
     }
   },
   computed: {
@@ -97,12 +103,17 @@ export default {
           this.input = ''
         }
       }
+      if (e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18) {
+        this.globalSend = true
+      }
       if (e.keyCode === 27) {
         this.input = ''
       }
     },
     onKeyUp: function (e) {
-
+      if (e.keyCode == 16 || e.keyCode == 17 || e.keyCode == 18) {
+        this.globalSend = false
+      }
     }
   },
   mounted: function () {
