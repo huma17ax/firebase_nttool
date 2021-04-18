@@ -62,6 +62,7 @@ export default {
   },
   watch: {
     chatTexts: function () {
+      if (this.chatTexts.length == 0) return
       this.colorTimer += 1
       setTimeout(() => {
         this.colorTimer -= 1
