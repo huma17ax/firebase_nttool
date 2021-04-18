@@ -38,17 +38,17 @@ const router = new Router({
 })
 
 router.beforeEach((to, from, next) => {
-    if (to.name === 'Home' && store.state.status.groupName) {
-      next({path: from.path})
-    } else if (to.name !== 'Home' && !store.state.status.groupName) {
-      next({path: '/'})
-    } else {
-      store.commit('status/setPageTransition', {state: true})
-      setTimeout(() => { next() }, 800)
-    }
-  })
-  router.afterEach((to, from, next) => {
-    store.commit('status/setPageTransition', {state: false})
-  })
+  if (to.name === 'Home' && store.state.status.groupName) {
+    next({path: from.path})
+  } else if (to.name !== 'Home' && !store.state.status.groupName) {
+    next({path: '/'})
+  } else {
+    store.commit('status/setPageTransition', {state: true})
+    setTimeout(() => { next() }, 800)
+  }
+})
+router.afterEach((to, from, next) => {
+  store.commit('status/setPageTransition', {state: false})
+})
 
 export default router

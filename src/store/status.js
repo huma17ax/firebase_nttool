@@ -130,149 +130,139 @@ const actions = {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     firebase.database().ref(GROUP+'/global_chat').push({'message': payload, 'timestamp': firebase.database.ServerValue.TIMESTAMP, 'sender': state.authID})
   },
-  makeGroup ({commit, state, dispatch}, payload) {
+  async makeGroup ({commit, state, dispatch}, payload) {
     commit('setLoginFailed', '')
     if (!state.connectStatus) return
     //パスワードのブラウザ保存
     //セットユーザーID
     const PW = genPW()
     const GROUP = 'groups/' + payload.groupName + '_' + genHash(PW)
-    firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(PW)]: true})
-    firebase.database().ref(GROUP).update({'name': payload.groupName}, (error) => {
-      if (error) {
-        commit('setLoginFailed', 'グループを作成できませんでした')
-      } else {
-        dispatch('joinGroup', {groupName: payload.groupName, password: PW})
-      }
+    const p1 = firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(PW)]: true})
+    const p2 = firebase.database().ref(GROUP).update({'name': payload.groupName})
+    Promise.all([p1, p2])
+    .then(() => {
+      dispatch('joinGroup', {groupName: payload.groupName, password: PW})
+    })
+    .catch((error) => {
+      commit('setLoginFailed', 'グループを作成できませんでした')
     })
   },
-  joinGroup ({commit, state, dispatch}, payload) {
+  async joinGroup ({commit, state, dispatch}, payload) {
     commit('setLoginFailed', '')
     if (!state.connectStatus) return
     const GROUP = 'groups/' + payload.groupName + '_' + genHash(payload.password)
     firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(payload.password)]: true})
     firebase.database().ref(GROUP+'/members/'+state.authID).update({'name': 'default'})
-    firebase.database().ref(GROUP).once('value')
-    .then((snapshot) => {
-      if (snapshot.exists()) {
-        commit('setGroupName', payload.groupName)
-        commit('setPassword', payload.password)
-        commit('setUserName', 'default')
-        firebase.database().ref(GROUP+'/global_chat').once('value')
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            commit('setNewGlobalChat', false)
-          } else {
-            commit('setNewGlobalChat', true)
-          }
-          firebase.database().ref(GROUP+'/global_chat').limitToLast(1).on('child_added', (snapshot) => {
-            if (state.newGlobalChat) {
-              commit('addChatText', snapshot.val().message)
-            } else {
-              commit('setNewGlobalChat', true)
-            }
-          })
-        })
-        dispatch('joinRoom', {room: 'default'}).then(() => {
-          router.push('/chat')
-        })
+    const tryGroup = await firebase.database().ref(GROUP).once('value')
+    if (!tryGroup.exists()) {
+      commit('setLoginFailed', 'グループ名/パスワードが違います')
+      return
+    }
+    commit('setGroupName', payload.groupName)
+    commit('setPassword', payload.password)
+    commit('setUserName', 'default')
+    const gChatHist = await firebase.database().ref(GROUP+'/global_chat').once('value')
+    if (gChatHist.exists()) {
+      commit('setNewGlobalChat', false)
+    } else {
+      commit('setNewGlobalChat', true)
+    }
+    firebase.database().ref(GROUP+'/global_chat').limitToLast(1).on('child_added', (snapshot) => {
+      if (state.newGlobalChat) {
+        commit('addChatText', snapshot.val().message)
       } else {
-        commit('setLoginFailed', 'グループ名/パスワードが違います')
+        commit('setNewGlobalChat', true)
       }
     })
+    dispatch('joinRoom', {room: 'default'}).then(() => {
+      router.push('/chat')
+    })
   },
-  leaveGroup ({commit, state, dispatch}, payload) {
+  async leaveGroup ({commit, state, dispatch}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    let member_updates = {}
-    member_updates['/rooms/'+state.roomName+'/members/'+state.authID] = null
-    member_updates['/members/'+state.authID] = null
-    firebase.database().ref(GROUP).update(member_updates)
+    await dispatch('leaveRoom')
+    firebase.database().ref(GROUP+'/members/'+state.authID).set(null)
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/text').off()
-    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/chat').limitToLast(1).off()
-    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members').off()
     firebase.database().ref(GROUP+'/members').off()
-    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/schedule').off()
     firebase.database().ref('authentications/'+state.authID).set(null)
-    commit('setSchedule', {type: 'stop'})
     commit('initializeStatus')
     router.push('/').catch(err => { console.log(err) })
   },
-  setUserName ({commit, state}, payload) {
+  async setUserName ({commit, state}, payload) {
     if (state.userName == payload) return
     if (!state.groupName || !state.authID || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).update({'name': payload}, (error) => {
-      if (!error) {
-        commit('setUserName', payload)
-      }
-    })
-    firebase.database().ref(GROUP+'/members/'+state.authID).update({'name': payload})
+    const user_updates = {
+      ['/rooms/'+state.roomName+'/members/'+state.authID+'/name']: payload,
+      ['/members/'+state.authID+'/name']: payload
+    }
+    await firebase.database().ref(GROUP).update(user_updates)
+    commit('setUserName', payload)
   },
   async changeRoom ({commit, state, dispatch}, payload) {
     if (state.roomName == payload.room) return
     if (!state.groupName || !state.connectStatus) return
     const userData = await dispatch('leaveRoom')
-    dispatch('joinRoom', {room: payload.room, data: userData})
+    await dispatch('joinRoom', {room: payload.room, data: userData})
   },
-  joinRoom ({commit, state}, payload) {
+  async joinRoom ({commit, state}, payload) {
     if (state.roomName == payload.room) return
     if (!state.groupName || !state.connectStatus) return
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
     let userData = (payload.data ? payload.data : {'name': state.userName, 'input': ''})
-    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members/'+state.authID).update(userData, (error) => {
-      if (!error) {
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_added', (snapshot) => {
-          commit('addText', {text: snapshot.val().message, id:snapshot.key})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_changed', (snapshot) => {
-          commit('updateText', {text: snapshot.val().message, id:snapshot.key})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_removed', (snapshot) => {
-          commit('removeText', {text: snapshot.val().message, id:snapshot.key})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/chat').once('value')
-        .then((snapshot) => {
-          if (snapshot.exists()) {
-            commit('setNewChat', false)
-          } else {
-            commit('setNewChat', true)
-          }
-          firebase.database().ref(GROUP+'/rooms/'+payload.room+'/chat').limitToLast(1).on('child_added', (snapshot) => {
-            if (state.newChat) {
-              commit('addChatText', snapshot.val().message)
-            } else {
-              commit('setNewChat', true)
-            }
-          })
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_added', (snapshot) => {
-          commit('addRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_changed', (snapshot) => {
-          commit('updateRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_removed', (snapshot) => {
-          commit('removeRoommate', {id: snapshot.key})
-        })
-        firebase.database().ref(GROUP+'/rooms/'+payload.room+'/schedule').on('value', (snapshot) => {
-          if (snapshot.exists()) {
-            const schedule = snapshot.val()
-            if (schedule.start == 0) {
-              commit('setSchedule', {type: 'stop'})
-            } else {
-              firebase.database().ref('.info/serverTimeOffset').once('value', (snapshot) => {
-                const offset = snapshot.val()
-                const past = (new Date().getTime() + offset - schedule.start) % (schedule.time * 1000)
-                commit('setSchedule', {type: 'start', now: schedule.time - Math.round(past / 1000), seconds: schedule.time})
-              })
-            }
-          }
-        })
-        commit('setRoomName', payload.room)
-        firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+payload.room).set(true)
+    const error = await firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members/'+state.authID).update(userData)
+    if (error) return
+
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_added', (snapshot) => {
+      commit('addText', {text: snapshot.val().message, id:snapshot.key})
+    })
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_changed', (snapshot) => {
+      commit('updateText', {text: snapshot.val().message, id:snapshot.key})
+    })
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/text').on('child_removed', (snapshot) => {
+      commit('removeText', {text: snapshot.val().message, id:snapshot.key})
+    })
+
+    const rChatHist = await firebase.database().ref(GROUP+'/rooms/'+payload.room+'/chat').once('value')
+    if (rChatHist.exists()) {
+      commit('setNewChat', false)
+    } else {
+      commit('setNewChat', true)
+    }
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/chat').limitToLast(1).on('child_added', (snapshot) => {
+      if (state.newChat) {
+        commit('addChatText', snapshot.val().message)
+      } else {
+        commit('setNewChat', true)
       }
     })
+
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_added', (snapshot) => {
+      commit('addRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
+    })
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_changed', (snapshot) => {
+      commit('updateRoommate', {id: snapshot.key, name: snapshot.val().name, input: snapshot.val().input})
+    })
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/members').on('child_removed', (snapshot) => {
+      commit('removeRoommate', {id: snapshot.key})
+    })
+
+    firebase.database().ref(GROUP+'/rooms/'+payload.room+'/schedule').on('value', (snapshot) => {
+      if (!snapshot.exists()) return
+      const schedule = snapshot.val()
+      if (schedule.start == 0) {
+        commit('setSchedule', {type: 'stop'})
+      } else {
+        firebase.database().ref('.info/serverTimeOffset').once('value')
+        .then((offsetSS) => {
+          const offset = offsetSS.val()
+          const past = (new Date().getTime() + offset - schedule.start) % (schedule.time * 1000)
+          commit('setSchedule', {type: 'start', now: schedule.time - Math.round(past / 1000), seconds: schedule.time})
+        })
+      }
+    })
+    commit('setRoomName', payload.room)
+    firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+payload.room).set(true)
   },
   async leaveRoom ({commit, state}, payload) {
     if (!state.groupName || !state.connectStatus) return
@@ -285,15 +275,18 @@ const actions = {
     commit('initChatText')
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
+    const snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
     let userData = null
-    let snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
     if (snapshot.exists()) {
       userData = snapshot.val()
     } else {
       userData = {'name': state.userName, 'input': ''}
     }
-    await firebase.database().ref(GROUP+'/members/'+state.authID+'/rooms/'+state.roomName).remove()
-    await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).remove()
+    const user_updates = {
+      ['/members/'+state.authID+'/rooms/'+state.roomName]: null,
+      ['/rooms/'+state.roomName+'/members/'+state.authID]: null
+    }
+    await firebase.database().ref(GROUP).update(user_updates)
     return userData
   },
   startSchedule ({commit, state}, payload) {
