@@ -31,6 +31,7 @@ const state = {
   roomName: '',
   authID: '',
   roommates: [],
+  groupMembers: [],
   // --- input ---
   texts: [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']],
   chatTexts: [],
@@ -152,7 +153,15 @@ const actions = {
     if (!state.connectStatus) return
     const GROUP = 'groups/' + payload.groupName + '_' + genHash(payload.password)
     firebase.database().ref('authentications/'+state.authID).set({[payload.groupName + '_' + genHash(payload.password)]: true})
+
     firebase.database().ref(GROUP+'/members/'+state.authID).update({'name': 'default'})
+    firebase.database().ref(GROUP+'/members').on('child_added', (snapshot) => {
+      commit('addGroupMember', {id: snapshot.key})
+    })
+    firebase.database().ref(GROUP+'/members').on('child_removed', (snapshot) => {
+      commit('removeGroupMember', {id: snapshot.key})
+    })
+
     const tryGroup = await firebase.database().ref(GROUP).once('value')
     if (!tryGroup.exists()) {
       commit('setLoginFailed', 'グループ名/パスワードが違います')
@@ -180,10 +189,13 @@ const actions = {
   },
   async leaveGroup ({commit, state, dispatch}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    await dispatch('leaveRoom')
+    await dispatch('leaveRoom', payload)
     firebase.database().ref(GROUP+'/members/'+state.authID).set(null)
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/members').off()
+    if (state.groupMembers.length == 0) {
+      firebase.database().ref(GROUP).set(null)
+    }
     firebase.database().ref('authentications/'+state.authID).set(null)
     commit('initializeStatus')
     router.push('/').catch(err => { console.log(err) })
@@ -275,18 +287,21 @@ const actions = {
     commit('initChatText')
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
-    const snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
     let userData = null
-    if (snapshot.exists()) {
-      userData = snapshot.val()
-    } else {
-      userData = {'name': state.userName, 'input': ''}
+    if (!payload || !payload.unload) {
+      // 終了時は重いawaitな処理はしない
+      const snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
+      if (snapshot.exists()) {
+        userData = snapshot.val()
+      } else {
+        userData = {'name': state.userName, 'input': ''}
+      }
     }
     const user_updates = {
       ['/members/'+state.authID+'/rooms/'+state.roomName]: null,
       ['/rooms/'+state.roomName+'/members/'+state.authID]: null
     }
-    await firebase.database().ref(GROUP).update(user_updates)
+    firebase.database().ref(GROUP).update(user_updates)
     return userData
   },
   startSchedule ({commit, state}, payload) {
@@ -328,6 +343,7 @@ const mutations = {
     state.userName = ''
     state.roomName = ''
     state.roommates = []
+    state.groupMembers = []
     state.texts = [['\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n', 'default']]
     state.chatTexts = []
     state.newChat = false
@@ -375,6 +391,17 @@ const mutations = {
   },
   setAuthID (state, payload) {
     state.authID = payload
+  },
+  initGroupMember (state, payload) {
+    state.groupMembers = []
+  },
+  addGroupMember (state, payload) {
+    if (payload.id == state.authID) return
+    state.groupMembers.push(payload.id)
+  },
+  removeGroupMember (state, payload) {
+    if (payload.id == state.authID) return
+    state.groupMembers = state.groupMembers.filter((item) => {return item != payload.id})
   },
   initRoommate (state, payload) {
     state.roommates = []
