@@ -180,7 +180,7 @@ const actions = {
   },
   async leaveGroup ({commit, state, dispatch}, payload) {
     const GROUP = 'groups/' + state.groupName + '_' + genHash(state.password)
-    await dispatch('leaveRoom')
+    await dispatch('leaveRoom', payload)
     firebase.database().ref(GROUP+'/members/'+state.authID).set(null)
     firebase.database().ref(GROUP+'/global_chat').limitToLast(1).off()
     firebase.database().ref(GROUP+'/members').off()
@@ -275,18 +275,21 @@ const actions = {
     commit('initChatText')
     commit('initRoommate')
     commit('setSchedule', {type: 'stop'})
-    const snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
     let userData = null
-    if (snapshot.exists()) {
-      userData = snapshot.val()
-    } else {
-      userData = {'name': state.userName, 'input': ''}
+    if (!payload || !payload.unload) {
+      // 終了時は重いawaitな処理はしない
+      const snapshot = await firebase.database().ref(GROUP+'/rooms/'+state.roomName+'/members/'+state.authID).once('value')
+      if (snapshot.exists()) {
+        userData = snapshot.val()
+      } else {
+        userData = {'name': state.userName, 'input': ''}
+      }
     }
     const user_updates = {
       ['/members/'+state.authID+'/rooms/'+state.roomName]: null,
       ['/rooms/'+state.roomName+'/members/'+state.authID]: null
     }
-    await firebase.database().ref(GROUP).update(user_updates)
+    firebase.database().ref(GROUP).update(user_updates)
     return userData
   },
   startSchedule ({commit, state}, payload) {
