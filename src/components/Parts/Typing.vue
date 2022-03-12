@@ -87,7 +87,7 @@ export default {
       if (e.keyCode === 123) {
         e.preventDefault()
         console.log('-> send text')
-        this.input = this.input.split('\n').join('|')
+        if (this.input === '') this.input = '\n'
         this.$store.dispatch('status/sendText', '\n' + this.input)
         this.input = ''
       }
