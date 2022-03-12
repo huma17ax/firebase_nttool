@@ -90,6 +90,7 @@ export default {
         if (this.input === '') this.input = '\n'
         this.$store.dispatch('status/sendText', '\n' + this.input)
         this.input = ''
+        synUpdate = true
       }
       if (e.keyCode === 13) {
         e.preventDefault()
