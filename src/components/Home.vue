@@ -4,7 +4,7 @@
             <img class="logo" src="@/assets/logo.png">
             <div style="padding: 96px 0px 20px 20px; font-size: 30px;"></div>
             <div style="text-align: center; color: red;" v-if="loginFailed && !isTryToJoin && !isTryToMake">{{loginFailed}}</div>
-            <div style="text-align: center; color: red;" v-if="!connectStatus">インターネットに繋がっていません</div>
+            <div style="text-align: center; color: red;" v-if="!connectStatus">サーバーに接続できません</div>
             <div class="input">
                 <p class="title">グループ名</p>
                 <input class="box" :disabled="isTryToMake" v-model="groupName"/>
@@ -41,6 +41,7 @@ export default {
   computed: {
     ...mapState('status', ['connectStatus', 'loginFailed', 'pageTransition']),
     isValidGroupName () {
+      if (this.groupName == '') return true
       return Boolean(this.groupName.match(/^[\x01-\x7E]+$/g))
     }
   },

@@ -27,7 +27,7 @@
 
         <div>
             <div style="padding: 10px 10px 0px 10px; height: 20px; display: inline-block;">
-                {{globalSend ? 'グループ全体に送信' : 'ルームのみに送信'}}
+                {{globalSend ? 'グループ全体' : 'ルームのみ'}}
             </div>
             <div style="padding: 10px 10px 0px 10px; height: 20px; display: inline-block; position: absolute; right: 3px;">
                 {{globalSend ? '' : '[Shift]：全体'}}
